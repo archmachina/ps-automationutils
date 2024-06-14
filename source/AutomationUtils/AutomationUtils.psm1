@@ -212,7 +212,7 @@ Function Invoke-ScriptRepeat
         [int]$WaitSeconds = 0,
 
         [Parameter(Mandatory=$false)]
-        [bool]$StopOnError = $false
+        [switch]$CatchError = $false
     )
 
     process
@@ -240,19 +240,16 @@ Function Invoke-ScriptRepeat
             Write-Verbose ("Start Time: " + $start.ToString("yyyyMMdd HH:mm:ss"))
 
             # Execute script - Output will be streamed back to the caller
-            & {
+            if ($CatchError)
+            {
                 try {
                     & $ScriptBlock *>&1
                 } catch {
+                    # Catch the error and pass it along in the pipeline 
                     $_
                 }
-            } | Select-ForType -Type 'System.Management.Automation.ErrorRecord' -Derived -ScriptBlock {
-                if ($StopOnError)
-                {
-                    Write-Error $_
-                } else {
-                    $_
-                }
+            } else {
+                & $ScriptBlock *>&1
             }
 
             # Capture finish time for script run
