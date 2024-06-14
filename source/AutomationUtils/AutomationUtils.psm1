@@ -7,6 +7,25 @@ $ErrorActionPreference = "Stop"
 $InformationPreference = "Continue"
 Set-StrictMode -Version 2
 
+# Classes
+
+Class AutomationUtilsCapture
+{
+    [System.Collections.Generic.List[System.Object]]$Objects
+
+    AutomationUtilsCapture()
+    {
+        $this.Objects = New-Object 'System.Collections.Generic.List[System.Object]'
+    }
+
+    [string]ToString()
+    {
+        return ($this.Objects | Out-String)
+    }
+}
+
+# Functions
+
 <#
 #>
 Function Select-ForType
@@ -279,6 +298,41 @@ Function Invoke-ScriptRepeat
                 }
             }
         }
+    }
+}
+
+<#
+#>
+Function New-Capture
+{
+    [CmdletBinding()]
+    param()
+
+    process
+    {
+        [AutomationUtilsCapture]::New()
+    }
+}
+
+<#
+#>
+Function Copy-ToCapture
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [AutomationUtilsCapture]$Capture,
+
+        [Parameter(Mandatory=$true,ValueFromPipeline)]
+        [AllowNull()]
+        $Object
+    )
+
+    process
+    {
+        $Capture.Objects.Add($Object)
+        $Object
     }
 }
 
