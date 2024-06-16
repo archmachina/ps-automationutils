@@ -46,15 +46,15 @@ Function Select-ForType
 
         [Parameter(Mandatory=$false)]
         [ValidateNotNull()]
-        [ScriptBlock]$Begin = {},
+        [ScriptBlock]$Begin = $null,
 
         [Parameter(Mandatory=$false)]
         [ValidateNotNull()]
-        [ScriptBlock]$Process = {},
+        [ScriptBlock]$Process = $null,
 
         [Parameter(Mandatory=$false)]
         [ValidateNotNull()]
-        [ScriptBlock]$End = {}
+        [ScriptBlock]$End = $null
     )
 
     begin
@@ -82,8 +82,17 @@ Function Select-ForType
         # Compare the input object type
         if ($Object.GetType() -eq $checkType -or ($Derived -and $checkType.IsAssignableFrom($Object.GetType())))
         {
-            $objects.Add($Object)
-            ForEach-Object -InputObject $Object -Process $Process
+            # Only store this object if we have an End script to pass it to
+            if ($null -ne $End)
+            {
+                $objects.Add($Object)
+            }
+
+            # Run the process script, if defined
+            if ($null -ne $Process)
+            {
+                ForEach-Object -InputObject $Object -Process $Process
+            }
         } else {
             $Object
         }
