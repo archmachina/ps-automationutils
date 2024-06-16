@@ -44,10 +44,28 @@ Function Select-ForType
         [ValidateNotNull()]
         [switch]$Derived = $false,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [ValidateNotNull()]
-        [ScriptBlock]$ScriptBlock
+        [ScriptBlock]$Begin = {},
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNull()]
+        [ScriptBlock]$Process = {},
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNull()]
+        [ScriptBlock]$End = {}
     )
+
+    begin
+    {
+        if ($null -ne $Begin)
+        {
+            & $Begin
+        }
+
+        $objects = New-Object 'System.Collections.Generic.List[System.Object]'
+    }
 
     process
     {
@@ -64,9 +82,18 @@ Function Select-ForType
         # Compare the input object type
         if ($Object.GetType() -eq $checkType -or ($Derived -and $checkType.IsAssignableFrom($Object.GetType())))
         {
-            ForEach-Object -InputObject $Object -Process $ScriptBlock
+            $objects.Add($Object)
+            ForEach-Object -InputObject $Object -Process $Process
         } else {
             $Object
+        }
+    }
+
+    end
+    {
+        if ($null -ne $End)
+        {
+            ForEach-Object -InputObject $objects -Process $End
         }
     }
 }
@@ -190,20 +217,20 @@ Function Format-AsLog
 
         $timestamp = [DateTime]::Now.ToString("yyyyMMdd HH:mm")
 
-        @($Input) | Select-ForType -Type 'System.String' -Derived -ScriptBlock {
+        @($Input) | Select-ForType -Type 'System.String' -Derived -Process {
             ("{0} (INFO): {1}" -f $timestamp, $_.ToString())
-        } | Select-ForType -Type 'System.Management.Automation.InformationRecord' -Derived -ScriptBlock {
+        } | Select-ForType -Type 'System.Management.Automation.InformationRecord' -Derived -Process {
             ("{0} (INFO): {1}" -f $timestamp, $_.ToString())
-        } | Select-ForType -Type 'System.Management.Automation.VerboseRecord' -Derived -ScriptBlock {
+        } | Select-ForType -Type 'System.Management.Automation.VerboseRecord' -Derived -Process {
             ("{0} (VERBOSE): {1}" -f $timestamp, $_.ToString())
-        } | Select-ForType -Type 'System.Management.Automation.ErrorRecord' -Derived -ScriptBlock {
+        } | Select-ForType -Type 'System.Management.Automation.ErrorRecord' -Derived -Process {
             ("{0} (ERROR): {1}" -f $timestamp, $_.ToString())
             $_ | Out-String -Stream | ForEach-Object {
                 ("{0} (ERROR): {1}" -f $timestamp, $_.ToString())
             }
-        } | Select-ForType -Type 'System.Management.Automation.DebugRecord' -Derived -ScriptBlock {
+        } | Select-ForType -Type 'System.Management.Automation.DebugRecord' -Derived -Process {
             ("{0} (DEBUG): {1}" -f $timestamp, $_.ToString())
-        } | Select-ForType -Type 'System.Management.Automation.WarningRecord' -Derived -ScriptBlock {
+        } | Select-ForType -Type 'System.Management.Automation.WarningRecord' -Derived -Process {
             ("{0} (WARNING): {1}" -f $timestamp, $_.ToString())
         }
     }
