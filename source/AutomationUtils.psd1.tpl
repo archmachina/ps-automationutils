@@ -73,8 +73,14 @@
       'Select-ForType',
       'Reset-LogFile',
       'Format-AsLog',
+      'Invoke-ScriptRepeat',
       'New-Capture',
-      'Copy-ToCapture'
+      'Copy-ToCapture',
+      'New-Notification',
+      'Send-Notifications',
+      'Register-Notifier',
+      'Register-Automation',
+      'Invoke-Automation'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
