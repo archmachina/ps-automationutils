@@ -471,6 +471,13 @@ Function Send-Notifications
 
     end
     {
+        # Check if we have some notifications to send
+        if (($batch.Notifications | Measure-Object).Count -lt 1)
+        {
+            # Nothing to do
+            return
+        }
+
         # Iterate by Notifier as each notifier should receive a batch of the notifications
         # to allow it to choose whether to batch send or send individually
         $script:Notifiers.Keys | ForEach-Object {
