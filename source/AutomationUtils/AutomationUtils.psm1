@@ -8,6 +8,7 @@ Set-StrictMode -Version 2
 
 # Global variables
 $script:Notifiers = @{}
+$script:Automations = @{}
 
 # Classes
 
@@ -30,11 +31,10 @@ Class AutomationUtilsNotification
 {
     [string]$Title = ""
     [string]$Body = ""
+    [string]$Source = ""
 
-    AutomationUtilsNotification([string]$Title, [string]$Body)
+    AutomationUtilsNotification()
     {
-        $this.Title = $Title
-        $this.Body = $Body
     }
 }
 
@@ -409,12 +409,21 @@ Function New-Notification
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Body
+        [string]$Body,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Source = ""
     )
 
     process
     {
-        [AutomationUtilsNotification]::New($Title, $Body)
+        $notification = [AutomationUtilsNotification]::New()
+        $notification.Title = $Title
+        $notification.Body = $Body
+        $notification.Source = $Source
+
+        $notification
     }
 }
 
@@ -490,6 +499,56 @@ Function Register-Notifier
     process
     {
         $script:Notifiers[$Name] = $ScriptBlock
+    }
+}
+
+Function Register-Automation
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ScriptBlock]$ScriptBlock
+    )
+
+    process
+    {
+        $script:Automations[$Name] = $ScriptBlock
+    }
+}
+
+Function Invoke-Automation
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNull()]
+        [HashTable]$Config = @{}
+    )
+
+    process
+    {
+        # Make sure this automation exists
+        if (!$script:Automations.ContainsKey($Name))
+        {
+            Write-Error "Automation `"$Name`" does not exist"
+        }
+
+        $automation = $script:Automations[$Name]
+
+        # Run the automation
+        & $automation @Config *>&1 | Select-ForType -Type AutomationUtilsNotification -Derived -Process {
+            $_.Source = $Name
+            $_
+        }
     }
 }
 
