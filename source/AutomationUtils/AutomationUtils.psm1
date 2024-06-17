@@ -1,11 +1,13 @@
 <#
 #>
 
-########
 # Global settings
 $ErrorActionPreference = "Stop"
 $InformationPreference = "Continue"
 Set-StrictMode -Version 2
+
+# Global variables
+$script:Notifiers = @{}
 
 # Classes
 
@@ -21,6 +23,30 @@ Class AutomationUtilsCapture
     [string]ToString()
     {
         return ($this.Objects | Out-String)
+    }
+}
+
+Class AutomationUtilsNotification
+{
+    [string]$Title = ""
+    [string]$Body = ""
+
+    AutomationUtilsNotification([string]$Title, [string]$Body)
+    {
+        $this.Title = $Title
+        $this.Body = $Body
+    }
+}
+
+Class AutomationUtilsNotificationBatch
+{
+    [string]$Name
+    [System.Collections.Generic.List[AutomationUtilsNotification]]$Notifications
+
+    AutomationUtilsNotificationBatch([string]$Name)
+    {
+        $this.Notifications = New-Object 'System.Collections.Generic.List[AutomationUtilsNotification]'
+        $this.Name = $Name
     }
 }
 
@@ -301,6 +327,7 @@ Function Invoke-ScriptRepeat
                     & $ScriptBlock *>&1
                 } catch {
                     # Catch the error and pass it along in the pipeline 
+                    Write-Verbose "Error received from script block"
                     $_
                 }
             } else {
@@ -369,6 +396,100 @@ Function Copy-ToCapture
     {
         $Capture.Objects.Add($Object)
         $Object
+    }
+}
+
+Function New-Notification
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Title,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Body
+    )
+
+    process
+    {
+        [AutomationUtilsNotification]::New($Title, $Body)
+    }
+}
+
+Function Send-Notifications
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true,ValueFromPipeline)]
+        [AllowNull()]
+        $Notification,
+
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNull()]
+        [switch]$Pass,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+    )
+
+    begin
+    {
+        $batch = [AutomationUtilsNotificationBatch]::New($Name)
+    }
+
+    process
+    {
+        # Check if we have a notification object to record
+        if ($null -ne $Notification -and ([AutomationUtilsNotification].IsAssignableFrom($Notification.GetType())))
+        {
+            $batch.Notifications.Add($Notification)
+            return
+        }
+
+        # If requested, pass the object on in the pipeline, rather than error
+        if ($Pass)
+        {
+            $Notification
+            return
+        }
+
+        # Not a notification object and we're not requested to pass it on, so error
+        Write-Error "Non-Notification passed to Send-Notifications and 'Pass' not enabled"
+    }
+
+    end
+    {
+        # Iterate by Notifier as each notifier should receive a batch of the notifications
+        # to allow it to choose whether to batch send or send individually
+        $script:Notifiers.Keys | ForEach-Object {
+            $notifierName = $_
+            $notifier = $script:Notifiers[$notifierName]
+
+            Write-Verbose ("Sending notification via " + $notifierName)
+            ForEach-Object -InputObject $batch -Process $notifier
+        }
+    }
+}
+
+Function Register-Notifier
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name="default",
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ScriptBlock]$ScriptBlock
+    )
+
+    process
+    {
+        $script:Notifiers[$Name] = $ScriptBlock
     }
 }
 
