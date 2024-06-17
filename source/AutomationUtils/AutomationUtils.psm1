@@ -14,16 +14,16 @@ $script:Automations = @{}
 
 Class AutomationUtilsCapture
 {
-    [System.Collections.Generic.List[System.Object]]$Objects
+    [System.Collections.Generic.List[System.Object]]$Content
 
     AutomationUtilsCapture()
     {
-        $this.Objects = New-Object 'System.Collections.Generic.List[System.Object]'
+        $this.Content = [System.Collections.Generic.List[System.Object]]::New()
     }
 
     [string]ToString()
     {
-        return ($this.Objects | Out-String)
+        return ($this.Content | Out-String)
     }
 }
 
@@ -394,7 +394,7 @@ Function Copy-ToCapture
 
     process
     {
-        $Capture.Objects.Add($Object)
+        $Capture.Content.Add($Object)
         $Object
     }
 }
