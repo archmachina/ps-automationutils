@@ -422,17 +422,23 @@ Function Invoke-CaptureScript
 
 Function New-Notification
 {
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName="Body")]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ParameterSetName="Body")]
+        [Parameter(Mandatory=$true, ParameterSetName="Script")]
         [ValidateNotNullOrEmpty()]
         [string]$Title,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true, ParameterSetName="Body")]
         [ValidateNotNullOrEmpty()]
-        [string]$Body,
+        [string]$Body = $null,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$true, ParameterSetName="Script")]
+        [ValidateNotNull()]
+        [ScriptBlock]$ScriptBlock = $null,
+
+        [Parameter(Mandatory=$false, ParameterSetName="Body")]
+        [Parameter(Mandatory=$false, ParameterSetName="Script")]
         [ValidateNotNullOrEmpty()]
         [string]$Source = ""
     )
@@ -441,8 +447,21 @@ Function New-Notification
     {
         $notification = [AutomationUtilsNotification]::New()
         $notification.Title = $Title
-        $notification.Body = $Body
         $notification.Source = $Source
+
+        switch ($PSCmdlet.ParameterSetName) {
+            "Body" {
+                $notification.Body = $Body
+            }
+            "Script" {
+                $capture = New-Capture
+                Invoke-CaptureScript -Capture $capture -ScriptBlock $ScriptBlock
+                $notification.Body = $capture.ToString()
+            }
+            default {
+                Write-Error "Unknown parameter set name"
+            }
+        }
 
         $notification
     }
