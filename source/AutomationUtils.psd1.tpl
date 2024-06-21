@@ -76,6 +76,7 @@
       'Invoke-ScriptRepeat',
       'New-Capture',
       'Copy-ToCapture',
+      'Invoke-CaptureScript',
       'New-Notification',
       'Send-Notifications',
       'Register-Notifier',

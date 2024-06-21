@@ -399,6 +399,27 @@ Function Copy-ToCapture
     }
 }
 
+<#
+#>
+Function Invoke-CaptureScript
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [AutomationUtilsCapture]$Capture,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ScriptBlock]$ScriptBlock
+    )
+
+    process
+    {
+        & $ScriptBlock *>&1 | Copy-ToCapture -Capture $capture
+    }
+}
+
 Function New-Notification
 {
     [CmdletBinding()]
