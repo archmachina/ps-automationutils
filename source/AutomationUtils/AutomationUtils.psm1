@@ -599,3 +599,75 @@ Function Invoke-Automation
     }
 }
 
+<#
+#>
+Function Limit-StringLength
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true,ValueFromPipeline)]
+        [ValidateNotNull()]
+        [string]$Str,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [int]$Length
+    )
+
+    process
+    {
+        $working = $Str
+
+        # Going to include ..., so must be 4 or higher
+        if ($Length -lt 4)
+        {
+            Write-Error "Length must be 4 or greater"
+        }
+
+        # Truncate and add '...' if the length is too high
+        if ($working.Length -gt $Length)
+        {
+            $working = $working.Substring(0, $Length-3) + "..."
+        }
+
+        $working
+    }
+}
+
+<#
+#>
+Function Split-StringLength
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true,ValueFromPipeline)]
+        [AllowEmptyString()]
+        [ValidateNotNull()]
+        [string]$Str,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [int]$WrapLength
+    )
+
+    process
+    {
+        if ($WrapLength -lt 1)
+        {
+            Write-Error "Invalid WrapLength - Must be greater than 0."
+        }
+
+        $working = $Str
+
+        while ($working.Length -gt $WrapLength)
+        {
+            $newStr = $working.Substring(0, $WrapLength)
+            $working = $working.Substring($WrapLength, $working.Length-$WrapLength)
+
+            $newStr
+        }
+
+        $working
+    }
+}
+
