@@ -606,6 +606,7 @@ Function Limit-StringLength
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline)]
+        [AllowEmptyString()]
         [ValidateNotNull()]
         [string]$Str,
 
